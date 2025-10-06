@@ -66,18 +66,12 @@ sysinfo.txt
 # Mono auto generated files
 mono_crash.*
 
-# ---------- Builds ----------
-# Ignore build artifacts by default...
+# Builds
 *.apk
 *.aab
 *.unitypackage
 *.unitypackage.meta
 *.app
-
-# ...but ALLOW root-level APK/AAB (project root, next to Assets/)
-!/*.apk
-!/*.aab
-# (Builds inside /Build/ or /Builds/ stay ignored above)
 
 # Crashlytics generated file
 crashlytics-build.properties
