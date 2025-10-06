@@ -1,0 +1,255 @@
+﻿using UnityEngine;
+using System;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.SceneManagement;
+using TMPro;
+
+public class MainScript : MonoBehaviour
+{
+    public int rememberScore;
+    public int rememberWorkouts;
+    public int workouts;
+    public int score;
+    public Text scoreText;
+    public float cooldownTime;
+    private bool inCooldown;
+    private bool inCooldown1;
+    public int ok = 0;
+    public int stop = 1;
+    public int remember;
+
+    public TMP_InputField workoutsInput;
+    public TMP_InputField pushupInput;
+    public TMP_InputField pushtimeavgInput;
+    public Text pushtimeText;
+    public Text pushtimeavgText;
+
+    private float push_starttime;
+    private float pushreduce;
+    private float pushtimesum;
+    private float pushtimeavg;
+
+    //DELAY A BUTTON
+    //public Button TheButton;
+    //public float ButtonReactivateDelay = 1f;
+
+    //// Assign this as your OnClick listener from the inspector
+    //public void WhenClicked()
+    //{
+    //    TheButton.interactable = false;
+    //    StartCoroutine(EnableButtonAfterDelay(TheButton, ButtonReactivateDelay));
+
+    //    // Do whatever else your button is supposed to do.
+    //}
+
+    //IEnumerator EnableButtonAfterDelay(Button button, float seconds)
+    //{
+    //    yield return new WaitForSeconds(seconds);
+    //    button.interactable = true;
+    //}
+
+    public void NoPushup()
+    {
+        if (score == 0)
+            ReturnMenu();
+    }
+
+    public void ResetScore()
+    {
+        rememberScore = score;
+        Time.timeScale = 1;
+        score = 0;
+        pushtimesum = 0;
+        pushtimeavg = 0;
+        pushreduce = 0;
+        push_starttime = 0;
+        int resetpushups = PlayerPrefs.GetInt("TotalPushups");
+        resetpushups -= rememberScore;
+        remember = rememberScore;
+        PlayerPrefs.SetInt("TotalPushups", resetpushups);
+        if (ok == 1)
+        {
+            int savedWorkout2 = PlayerPrefs.GetInt("TotalWorkouts");
+            savedWorkout2 -= 1;
+            PlayerPrefs.SetInt("TotalWorkouts", savedWorkout2);
+            ok = 0;
+        }
+        stop = 0;
+    }
+
+    private void Awake()
+    {
+        Application.targetFrameRate = -1;
+    }
+
+    public void AddScore()
+    {
+        if (!inCooldown)
+        {
+            score++;
+            TotalPushupsUpdater();
+            if (score > 1)
+            {
+                pushtimesum += pushreduce;
+                pushtimeavg = pushtimesum / (score - 1);
+            }
+            push_starttime = Time.time;
+            StartCoroutine(Cooldown());
+        }
+    }
+
+    public void AddScore1()
+    {
+        if (!inCooldown1)
+        {
+            score++;
+            TotalPushupsUpdater();
+            if (score > 1)
+            {
+                pushtimesum += pushreduce;
+                pushtimeavg = pushtimesum / (score - 1);
+            }
+            push_starttime = Time.time;
+            StartCoroutine(Cooldown2());
+        }
+    }
+
+    void TotalPushupsUpdater()
+    {
+        int savedPushup = PlayerPrefs.GetInt("TotalPushups");
+        savedPushup += 1;
+        PlayerPrefs.SetInt("TotalPushups", savedPushup);
+    }
+
+    //public void SubmitWorkout()
+    //{
+    //    int savedWorkout = PlayerPrefs.GetInt("TotalWorkouts");
+    //    savedWorkout += 1;
+    //    PlayerPrefs.SetInt("TotalWorkouts", savedWorkout);
+    //    if (score >= 2)
+    //    {
+    //        int savedAvgPaceWorkouts = PlayerPrefs.GetInt("TotalAvgPaceWorkouts");
+    //        savedAvgPaceWorkouts += 1;
+    //        PlayerPrefs.SetInt("TotalAvgPaceWorkouts", savedAvgPaceWorkouts);
+
+    //        float SavedAvgSum = PlayerPrefs.GetFloat("AveragesSum");
+    //        SavedAvgSum += pushtimeavg;
+    //        PlayerPrefs.SetFloat("AveragesSum", SavedAvgSum);
+
+    //        float SavedAvgTotal = SavedAvgSum / savedAvgPaceWorkouts;
+    //        PlayerPrefs.SetFloat("TotalAvgSum", SavedAvgTotal);
+    //    }
+    //}
+
+    void Update()
+    {
+        scoreText.text = score.ToString();
+        pushreduce = Time.time - push_starttime;
+        if (score >= 1)
+            pushtimeText.text = "Time/Pushup: " + pushreduce.ToString("F2") + " seconds";
+        if (score < 1)
+            pushtimeText.text = "Time/Pushup";
+        if (score <= 1)
+            pushtimeavgText.text = "Average Time/Pushup";
+        if (score >= 2)
+            pushtimeavgText.text = "Average Time/Pushup: " + pushtimeavg.ToString("F2") + " seconds";
+
+        InputSystem.EnableDevice(ProximitySensor.current);
+        //int senzor = ProximitySensor.current.distance.ReadValue();
+        if (ProximitySensor.current.distance.ReadValue() == 0)
+            AddScore1();
+    }
+
+    public void ResetGame()
+    {
+        SceneManager.LoadScene("SampleScene");
+        Time.timeScale = 1;
+        //score = 0;
+    }
+
+    public void ReturnMenu()
+    {
+        rememberScore = score;
+        SceneManager.LoadScene("MenuScene");
+        Time.timeScale = 0;
+        //if (stop == 1)
+        //{
+        //    int resetpushups1 = PlayerPrefs.GetInt("TotalPushups");
+        //    resetpushups1 -= (rememberScore - remember);
+        //    PlayerPrefs.SetInt("TotalPushups", resetpushups1);
+        //}
+    }
+
+    public void SaveScore()
+    {
+        if (score > 0 && ok == 0)
+        {
+            int savedWorkout = PlayerPrefs.GetInt("TotalWorkouts");
+            savedWorkout += 1;
+            PlayerPrefs.SetInt("TotalWorkouts", savedWorkout);
+            ok = 1;
+        }
+        if (score >= 2)
+        {
+            int savedAvgPaceWorkouts = PlayerPrefs.GetInt("TotalAvgPaceWorkouts");
+            savedAvgPaceWorkouts += 1;
+            PlayerPrefs.SetInt("TotalAvgPaceWorkouts", savedAvgPaceWorkouts);
+
+            float SavedAvgSum = PlayerPrefs.GetFloat("AveragesSum");
+            SavedAvgSum += pushtimeavg;
+            PlayerPrefs.SetFloat("AveragesSum", SavedAvgSum);
+
+            float SavedAvgTotal = SavedAvgSum / savedAvgPaceWorkouts;
+            PlayerPrefs.SetFloat("TotalAvgSum", SavedAvgTotal);
+        }
+        stop = 0;
+    }
+
+    private IEnumerator Cooldown()
+    {
+        inCooldown = true;
+        yield return new WaitForSeconds(cooldownTime);
+        inCooldown = false;
+    }
+
+    private IEnumerator Cooldown2()
+    {
+        inCooldown1 = true;
+        yield return new WaitForSeconds(cooldownTime);
+        inCooldown1 = false;
+    }
+
+    public void Pause()
+    {
+        Time.timeScale = 0;
+    }
+
+    public void Pause1()
+    {
+        Time.timeScale = 1;
+    }
+
+    public void ResetScores()
+    {
+        int resetnumber = 0;
+        float resetfloat = 0;
+        PlayerPrefs.SetInt("TotalPushups", resetnumber);
+        PlayerPrefs.SetInt("TotalWorkouts", resetnumber);
+        PlayerPrefs.SetInt("TotalAvgPaceWorkouts", resetnumber);
+        PlayerPrefs.SetFloat("AveragesSum", resetfloat);
+        PlayerPrefs.SetFloat("TotalAvgSum", resetfloat);
+        pushupInput.text = PlayerPrefs.GetInt("TotalPushups").ToString();
+        workoutsInput.text = PlayerPrefs.GetInt("TotalWorkouts").ToString();
+        pushtimeavgInput.text = PlayerPrefs.GetFloat("TotalAvgSum").ToString("F2"); // + " sec.";
+    }
+
+    public void CloseMenuScores()
+    {
+        pushupInput.text = PlayerPrefs.GetInt("TotalPushups").ToString();
+        workoutsInput.text = PlayerPrefs.GetInt("TotalWorkouts").ToString();
+        pushtimeavgInput.text = PlayerPrefs.GetFloat("TotalAvgSum").ToString("F2"); // + " sec";
+    }
+}
